@@ -1,0 +1,20 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: devbrain-db
+    environment:
+      POSTGRES_USER: devbrain
+      POSTGRES_PASSWORD: devbrain
+      POSTGRES_DB: devbrain
+    ports:
+      - "5432:5432"
+    volumes:
+      - devbrain_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devbrain -d devbrain"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  devbrain_pgdata:

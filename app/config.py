@@ -12,8 +12,10 @@ class Settings(BaseSettings):
     environment: str = "local"
     log_level: str = "INFO"
 
+    # PostgreSQL + pgvector connection (psycopg 3 driver)
+    database_url: str = "postgresql://devbrain:devbrain@localhost:5432/devbrain"
+
     # Added at their respective steps:
-    # database_url: str        # step 2 (pgvector)
     # embedding_model: str     # step 3
     # anthropic_api_key: str   # step 4 (LLM)
 
