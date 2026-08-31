@@ -9,8 +9,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Schema applied once, on first boot of an empty data dir
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - devbrain_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devbrain -d devbrain"]
