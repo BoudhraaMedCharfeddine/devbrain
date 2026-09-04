@@ -10,6 +10,9 @@ dependencies = [
     "pydantic-settings>=2.6",
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
+    "sentence-transformers>=6.0.1",
+    "torch>=2.14.0",
+    "pgvector>=0.5.0",
 ]
 
 [project.optional-dependencies]
@@ -42,3 +45,11 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
