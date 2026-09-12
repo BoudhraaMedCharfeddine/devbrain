@@ -5,7 +5,6 @@ from uuid import UUID
 
 from app.domain.model.chunk import Chunk
 
-
 class VectorStorePort(Protocol):
     """Stores and searches chunks by similarity. Backed by pgvector."""
 
