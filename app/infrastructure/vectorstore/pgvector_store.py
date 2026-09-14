@@ -23,6 +23,14 @@ class PgVectorStore:
         register_vector(conn)
         return conn
 
+    def add_document(self, document_id: UUID, title: str, source: str) -> None:
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO documents (id, title, source) VALUES (%s, %s, %s)",
+                (document_id, title, source),
+            )
+            conn.commit()
+
     def add_chunks(self, chunks: list[Chunk], embeddings: list[list[float]]) -> None:
         if len(chunks) != len(embeddings):
             raise ValueError("chunks and embeddings must have the same length")
@@ -41,10 +49,38 @@ class PgVectorStore:
             )
             conn.commit()
 
-    def add_document(self, document_id: UUID, title: str, source: str) -> None:
+    def search(
+        self, embedding: list[float], top_k: int
+    ) -> list[tuple[Chunk, float]]:
+        """Return the top_k chunks closest to `embedding` by cosine distance.
+
+        Uses pgvector's `<=>` operator, which the HNSW index built on
+        vector_cosine_ops accelerates. The float returned is a similarity
+        score in [0, 1]: 1.0 = identical direction, 0.0 = opposite.
+        """
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO documents (id, title, source) VALUES (%s, %s, %s)",
-                (document_id, title, source),
+                """
+                SELECT id, document_id, content, position,
+                       embedding <=> %s::vector AS distance
+                FROM chunks
+                ORDER BY embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (embedding, embedding, top_k),
             )
-            conn.commit()
+            rows = cur.fetchall()
+
+        return [
+            (
+                Chunk(
+                    id=row[0],
+                    document_id=row[1],
+                    content=row[2],
+                    position=row[3],
+                ),
+                # cosine distance in [0, 2] -> similarity in [-1, 1] -> clamped [0, 1]
+                max(0.0, 1.0 - float(row[4])),
+            )
+            for row in rows
+        ]
