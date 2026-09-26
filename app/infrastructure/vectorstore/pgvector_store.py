@@ -6,6 +6,7 @@ import psycopg
 from pgvector.psycopg import register_vector
 
 from app.domain.model.chunk import Chunk
+from app.domain.model.document_summary import DocumentSummary
 
 
 class PgVectorStore:
@@ -84,3 +85,91 @@ class PgVectorStore:
             )
             for row in rows
         ]
+
+    def list_documents(self) -> list[DocumentSummary]:
+        """List all documents with their chunk counts and a content preview."""
+        from app.domain.model.document_summary import DocumentSummary
+
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    d.id,
+                    d.title,
+                    d.source,
+                    d.created_at,
+                    COUNT(c.id) AS chunk_count,
+                    (
+                        SELECT content
+                        FROM chunks
+                        WHERE document_id = d.id
+                        ORDER BY position
+                        LIMIT 1
+                    ) AS preview
+                FROM documents d
+                LEFT JOIN chunks c ON c.document_id = d.id
+                GROUP BY d.id
+                ORDER BY d.created_at DESC
+                """
+            )
+            rows = cur.fetchall()
+
+        return [
+            DocumentSummary(
+                id=row[0],
+                title=row[1],
+                source=row[2],
+                created_at=row[3],
+                chunk_count=row[4],
+                preview=(row[5] or "")[:200],
+            )
+            for row in rows
+        ]
+
+    def get_document_with_stats(self, document_id: UUID) -> DocumentSummary | None:
+        """Return one document with its chunk count and preview, or None."""
+        from app.domain.model.document_summary import DocumentSummary
+
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    d.id,
+                    d.title,
+                    d.source,
+                    d.created_at,
+                    COUNT(c.id) AS chunk_count,
+                    (
+                        SELECT content
+                        FROM chunks
+                        WHERE document_id = d.id
+                        ORDER BY position
+                        LIMIT 1
+                    ) AS preview
+                FROM documents d
+                LEFT JOIN chunks c ON c.document_id = d.id
+                WHERE d.id = %s
+                GROUP BY d.id
+                """,
+                (document_id,),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            return None
+        return DocumentSummary(
+            id=row[0],
+            title=row[1],
+            source=row[2],
+            created_at=row[3],
+            chunk_count=row[4],
+            preview=(row[5] or "")[:200],
+        )
+
+    def delete_document(self, document_id: UUID) -> bool:
+        """Delete a document (chunks cascade via FK). Returns True if deleted."""
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute("DELETE FROM documents WHERE id = %s", (document_id,))
+            deleted = cur.rowcount
+            conn.commit()
+        return deleted > 0
