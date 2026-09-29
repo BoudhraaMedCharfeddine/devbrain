@@ -10,3 +10,7 @@ venv/
 dist/
 build/
 .DS_Store
+
+# sed -i.bak backups
+.env.*
+*.bak
