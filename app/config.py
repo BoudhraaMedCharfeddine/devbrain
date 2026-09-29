@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "mistral:7b-instruct"
 
+    # RAG retrieval: chunks below this cosine similarity are filtered out
+    # before being sent to the LLM (0.0 = no filter, 1.0 = perfect match only)
+    similarity_threshold: float = 0.82
 
 @lru_cache
 def get_settings() -> Settings:
