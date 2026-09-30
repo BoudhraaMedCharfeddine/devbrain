@@ -46,6 +46,10 @@ def get_ingest_use_case() -> IngestDocument:
 
 def get_answer_use_case() -> AnswerQuestion:
     """Wires the query use case with its adapters."""
+    settings = get_settings()
     return AnswerQuestion(
-        embedder=get_embedder(), store=get_vector_store(), llm=get_llm()
+        embedder=get_embedder(),
+        store=get_vector_store(),
+        llm=get_llm(),
+        similarity_threshold=settings.similarity_threshold,
     )
