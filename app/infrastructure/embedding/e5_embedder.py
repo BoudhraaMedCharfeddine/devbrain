@@ -32,5 +32,6 @@ class E5Embedder:
             texts,
             normalize_embeddings=True,
             convert_to_numpy=True,
+            show_progress_bar=False,
         )
         return embeddings.tolist()
